@@ -1,7 +1,17 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 
 streamlit==1.40.2
-torch==2.4.1
+torch==2.4.1+cpu
 transformers==4.46.3
+tokenizers==0.20.3
+huggingface-hub==0.26.2
+safetensors==0.4.5
 sentencepiece==0.2.0
 protobuf==4.25.5
+numpy<2
+filelock
+regex
+requests
+tqdm
+packaging
+pyyaml
