@@ -19,26 +19,20 @@ st.set_page_config(page_title="Smart MCQ Solver", page_icon="?", layout="centere
 
 
 # ---------------------------------------------------------------- model
-@st.cache_resource(show_spinner="Loading model, this takes a minute on first run...")
+@st.cache_resource(show_spinner="Loading model...")
 def load_model():
     tokenizer = AutoTokenizer.from_pretrained(REPO)
-    model = AutoModelForMultipleChoice.from_pretrained(REPO)
+    model = AutoModelForMultipleChoice.from_pretrained(
+        REPO,
+        torch_dtype=torch.float32,
+        low_cpu_mem_usage=True,        # ← peak memory aadhi kar deta hai
+    )
     model.eval()
-
-    # int8 quantization shrinks the model from ~740 MB to ~190 MB,
-    # which matters because Streamlit Community Cloud allows 1 GB.
-    # The API moved between torch versions, so try both and carry on
-    # unquantized if neither works.
     try:
         model = torch.ao.quantization.quantize_dynamic(
             model, {torch.nn.Linear}, dtype=torch.qint8)
     except Exception:
-        try:
-            model = torch.quantization.quantize_dynamic(
-                model, {torch.nn.Linear}, dtype=torch.qint8)
-        except Exception as e:
-            st.warning(f"Running unquantized: {e}")
-
+        pass
     return tokenizer, model
 
 
