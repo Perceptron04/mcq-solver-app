@@ -21,23 +21,24 @@ st.set_page_config(page_title="Smart MCQ Solver", page_icon="?", layout="centere
 # ---------------------------------------------------------------- model
 @st.cache_resource(show_spinner="Loading model, this takes a minute on first run...")
 def load_model():
-    """Load once and keep in memory across reruns.
-
-    Streamlit reruns the whole script on every interaction, so without
-    cache_resource the model would reload on every button press.
-
-    Dynamic int8 quantization shrinks the Linear layers from float32 to
-    int8. That takes the model from roughly 740 MB to about 190 MB, which
-    matters because Streamlit Community Cloud allows only 1 GB of RAM.
-    It also runs faster on CPU. The accuracy cost is small.
-    """
     tokenizer = AutoTokenizer.from_pretrained(REPO)
     model = AutoModelForMultipleChoice.from_pretrained(REPO)
     model.eval()
 
-    model = torch.quantization.quantize_dynamic(
-        model, {torch.nn.Linear}, dtype=torch.qint8
-    )
+    # int8 quantization shrinks the model from ~740 MB to ~190 MB,
+    # which matters because Streamlit Community Cloud allows 1 GB.
+    # The API moved between torch versions, so try both and carry on
+    # unquantized if neither works.
+    try:
+        model = torch.ao.quantization.quantize_dynamic(
+            model, {torch.nn.Linear}, dtype=torch.qint8)
+    except Exception:
+        try:
+            model = torch.quantization.quantize_dynamic(
+                model, {torch.nn.Linear}, dtype=torch.qint8)
+        except Exception as e:
+            st.warning(f"Running unquantized: {e}")
+
     return tokenizer, model
 
 
@@ -159,4 +160,4 @@ questions written differently.
         """
     )
 
-st.caption("Sagar K Chaudhary | 23f2002523 | IIT Madras BS Data Science")
+st.caption("Sagar K Chaudhary| Deep Learning Project")
