@@ -19,20 +19,27 @@ st.set_page_config(page_title="Smart MCQ Solver", page_icon="?", layout="centere
 
 
 # ---------------------------------------------------------------- model
-@st.cache_resource(show_spinner="Loading model...")
+@st.cache_resource(show_spinner="Loading model, this takes a minute on first run...")
 def load_model():
     tokenizer = AutoTokenizer.from_pretrained(REPO)
+
+    # float16 halves the memory: ~740 MB becomes ~370 MB.
+    # low_cpu_mem_usage loads shard by shard so there is never a
+    # second full copy in RAM at once.
     model = AutoModelForMultipleChoice.from_pretrained(
         REPO,
-        torch_dtype=torch.float32,
-        low_cpu_mem_usage=True,        # ← peak memory aadhi kar deta hai
+        torch_dtype=torch.float16,
+        low_cpu_mem_usage=True,
     )
+    model = model.float()      # back to float32 for CPU inference
     model.eval()
+
     try:
         model = torch.ao.quantization.quantize_dynamic(
             model, {torch.nn.Linear}, dtype=torch.qint8)
     except Exception:
         pass
+
     return tokenizer, model
 
 
