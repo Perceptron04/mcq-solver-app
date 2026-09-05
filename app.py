@@ -23,9 +23,9 @@ st.set_page_config(page_title="Smart MCQ Solver", page_icon="?", layout="centere
 def load_model():
     tokenizer = AutoTokenizer.from_pretrained(REPO)
 
-    # float16 halves the memory: ~740 MB becomes ~370 MB.
-    # low_cpu_mem_usage loads shard by shard so there is never a
-    # second full copy in RAM at once.
+    # float16 halves the memory during loading: ~740 MB becomes ~370 MB.
+    # low_cpu_mem_usage streams the weights in shard by shard, so there is
+    # never a second full copy in RAM at the same time.
     model = AutoModelForMultipleChoice.from_pretrained(
         REPO,
         torch_dtype=torch.float16,
@@ -34,13 +34,25 @@ def load_model():
     model = model.float()      # back to float32 for CPU inference
     model.eval()
 
+    # int8 quantization of the linear layers cuts the footprint further
+    # and speeds up CPU inference. The API path moved between torch
+    # versions, so try both and carry on unquantized if neither works.
     try:
         model = torch.ao.quantization.quantize_dynamic(
             model, {torch.nn.Linear}, dtype=torch.qint8)
     except Exception:
-        pass
+        try:
+            model = torch.quantization.quantize_dynamic(
+                model, {torch.nn.Linear}, dtype=torch.qint8)
+        except Exception:
+            pass
 
     return tokenizer, model
+
+
+# Load at startup rather than on first click, so the model is already in
+# memory when a visitor arrives and "Solve" responds immediately.
+tokenizer, model = load_model()
 
 
 def predict(question, options, tokenizer, model):
@@ -106,8 +118,6 @@ if st.button("Solve", type="primary"):
     elif any(not o.strip() for o in options):
         st.warning("Please fill in all five options.")
     else:
-        tokenizer, model = load_model()
-
         with st.spinner("Thinking..."):
             probs = predict(question.strip(), [o.strip() for o in options],
                             tokenizer, model)
@@ -161,4 +171,4 @@ questions written differently.
         """
     )
 
-st.caption("Sagar K Chaudhary| Deep Learning Project")
+st.caption("Sagar K Chaudhary | Deep Learning Project")
