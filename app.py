@@ -9,9 +9,11 @@ question using a DeBERTa-v3 model fine-tuned with LoRA.
 import torch
 import streamlit as st
 from transformers import AutoTokenizer, AutoModelForMultipleChoice
+import os
+os.environ["HF_HOME"] = "/tmp/hf_cache"
 
 # ---------------------------------------------------------------- config
-REPO = "Tokyo0412/mcq-solver-deberta"
+REPO = "Tokyo0412/mcq-solver-electra"
 OPTS = ["A", "B", "C", "D", "E"]
 MAX_LEN = 256
 
