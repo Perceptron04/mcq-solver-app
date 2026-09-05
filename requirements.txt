@@ -1,7 +1,4 @@
---extra-index-url https://download.pytorch.org/whl/cpu
-
-streamlit==1.40.2
-torch==2.4.1+cpu
+torch==2.4.1
 transformers==4.46.3
 tokenizers==0.20.3
 huggingface-hub==0.26.2
@@ -10,9 +7,4 @@ accelerate==1.1.1
 sentencepiece==0.2.0
 protobuf==4.25.5
 numpy<2
-filelock
-regex
-requests
-tqdm
-packaging
-pyyaml
+streamlit==1.40.2
